@@ -1,0 +1,21 @@
+# Local Terraform state files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Terraform configuration/variable override files containing secrets
+*.tfvars
+*.tfvars.json
+!example.tfvars
+
+# Security scan reports and local binaries
+*.sarif
+gitleaks*
+*.tar.gz
+
+# IDE and OS specific files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

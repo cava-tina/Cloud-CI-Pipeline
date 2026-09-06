@@ -1,0 +1,202 @@
+Security Findings 
+
+1) Hardcoded AWS Provider Credentials 
+
+Severity : Critical 
+
+Component : provider "aws" (Main.tf)
+
+Description: AWS access keys and secret keys hardcoded directly into the configuration block instead of using env variables 
+
+Possible attack : Since paylite is hosted within a private corporate GitHub or GitLab repo, hardcoding secret tokens are dangerous due to reasons such as compromised developer accounts where if the engineer account has not been 2FA enabled and a weak password then attackers can easily gain access to repo and harvest credentials. Even if the engineer deletes the key in later commits, attackers can poetentially find them in Git Commit History. 
+
+Remediation: Remove the hardcoded credentials entirely, configurations rely solely on env variables such as AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY injected during runtime 
+
+2) Violation of least privilege concept via overly permissive IAM policy 
+
+Severity : Critical 
+
+Component : resource "aws_iam_user_policy" (Main.tf)
+
+Description: The IAM user "svc-paylite-deploy" is assigned an IAM user policy with the Action : "*" and Resource : "*", which allows the users to perform any CRUD action on any AWS resource in this case not only limited to the existing RDS DB, S3bucket and security group  
+
+Possible attack: In event IAM user keys compromised as seen in the Cloud Trail and Guard Duty incident logs in Part C, the attacker modify IAM configurations thus locking out the original IAM user "svc-paylite-deploy", provision unathorised resources, infect the cloud with ransomware, or delete production applications along with its data
+
+Remediation: Scope down the policy to only necessary or required S3 actions such as ListBucket, GetObject, PutObject for the target S3 bucket 
+
+3) Public S3 bucket acl 
+
+Severity : High 
+
+Component: aws_s3_bucket_acl (Main.tf) 
+
+Description : S3 bucket which could be holding financial reports or backups is configured with acl = "public-read"
+
+Possible attack : The rule allows anyone on the internet to list and download the files as this bypasses the IAM and no verification required assuming if they manage to guess the path to s3 bucket and the s3 bucket name
+
+Remediation : Remove the public ACL s3 resource and implement a bucket policy instead which blocks public acls and enforces least privilege where only the assigned IAM user able to access the bucket 
+
+4) Insecure Security Group Ingress Rules 
+
+Severity : High 
+
+Component: resource "aws_security_group" (main.tf)
+
+Description: Ingress rules open both SSH Port 22 and MySQL port 3306 to entire internet due to the rule in the security group section cidr_blocks = ["0.0.0.0/0"]
+
+Possible attack : Exposes admin access and database ports to internet based bots or scanners, which can lead to brute forcing attacks and SQL exploitation 
+
+Remediation: Restrict the SSH ingress to a secure office VPN network or a set VPN static ip address to ensure only authorized users log in, restrict MySQL database ingress security group by only allowing it to reference security groups of resources instead of ip addresses that require to access database 
+
+5) Publicly Accessible RDS DB and Unencrypted 
+
+Severity : High 
+
+Component : resource "aws_db_instance" (main.tf)
+
+Description: MySQL DB has enabled publicly_accessible    = true and storage_encrypted      = false
+
+Possible attack : The rule would assign a public ip to the DB instance, exposing it to the internet where attacks can easily scan the DB and start their attacks, the unencrypted disks leaves the disk volume readable which leaks sensitive information 
+
+Remediation / Fix: Set publicly_accessible = false to keep the database isolated in private subnets, and enabled storage_encrypted = true.
+
+6) Secret exposure in output file 
+
+Severity : High 
+
+Component : aws_iam_access_key.svc_deploy_key.secret (outputs.tf) 
+
+Description: Terraform is explicitly print out aws_iam_access_key.svc_deploy_key.secret
+
+Possible attack: Secret access keys will be printed in plain text into CI CD pipelines build logs every time is applied 
+
+Remediation : Remove the block completely, sensitive secret should be securely fetched using AWS managed vaults, AWS Secret Manager or any third party secure vault such as those from Hashicorp
+
+7) Hardcoded Database Password 
+
+Severity : Medium 
+
+Components: variable "db_password" (variables.tf) 
+
+Description : The database password variable contains a hardcoded default cleartext string "Paylite@2026!"
+
+Possible attack : Default credentials inside the tf files indicates password will be checked into Git History, anyone with read access to repo can easily access the password. Assuming if the same password is used in testing environments and the account is compromised attackers can easily gain access to production using the found password
+
+
+Recommended additions: 
+
+1) Terraform State Storage and Management 
+
+
+Architecture : Migrate the local storage state, tfstate which terraform uses to compare current config with the existing infra in cloud to a separate dedicated encrypted S3 backend combined with Dynamo Db for state locking preventing race condition
+
+Security implementation : 
+
+a)Enable S3 Bucket versioning to ensure data can be rollbacked in event of ransomware where older unencrypted copies can be restored 
+b)Enable S3 MFA Delete to prevent accidental or unauthorised deletions 
+c)Use fine grained IAM policies to block majority users from scheduling kms key deletion or disabling keys so when attackers gain access they are unable to disable the KMS keys, even if keys managed to get deleted there is 7 days grace period to restore keys 
+d)Using Dynamo DB state locking to prevent concurrent tf apply preventing data corruption 
+
+
+2) Database Security and Disaster Recovery 
+
+Architecture: Multi AZ deployment of RDS MySQL Instances for local infra failures coupled with Cross Region Read Replica for events such as failure of entire region 
+
+Security Implementation : 
+
+a) Implement AWS Backup vault Lock preventing anyone even root from deleting the backups instead of relying solely on automated snapshots which are susceptible to deletion in event attacker successfully gain access to account 
+
+3) Mandatory Resource Tagging 
+
+Architecture : Create a standardized template for tagging which includes details such as the CreatedDate, CreatedBy, ProjectName, ManagedBy 
+
+Security Implementation : 
+
+a) Everytime a new resource is created mandatory tagging for compliance and cost governance, IAM can be used to restrict permission to certain users in cloud based on the resource tags, helps to detect occurrence of shadow IT 
+
+4) Automated Incident Remediation : 
+
+Architecture: Guard Duty Only detects threats and raises alerts so considered passive, require manual intervention 
+
+Security Implementation: 
+
+a)For automated incident response should pair with Event Bridge and Lambda, when Guard Duty detects threats event bridge will be alerted which invokes Lambda to isolate the affected resource 
+
+Part B - GitHub Actions CI Pipeline Security & Repo Hygiene 
+
+1) Pipeline Architecture 
+
+a) Trigger : Automatically executes on every pull_request and push to the main branch
+
+b) How it works: The pipeline enforces strict pre merge security gating where code cannot be merged unless it passes from syntax checks, structures and security checks ensuring vulnerable codes never reach the cloud 
+
+Enforced a gate that fails when vulnerabilities are found via tools such as : 
+
+a) terraform validate : Checks and catches syntax and provider configuration erros 
+
+b)checkov : scans infrastructure against cloud security benchmarks 
+
+c) gitleaks : blocks accidental secret leaks in GIT commit History 
+
+Checkov Findings Resolution : 
+
+Remidiated Findings (Applied fixes in Main.tf file)
+
+1) CKV_AWS_226 - RDS Minor Version Upgrades Disabled 
+
+a) Status : Fixed 
+
+b) Action : Added auto_minor_version_upgrade = true to aws_db_instance.paylite_db
+
+c) Rationale: Enabling this feature ensures critical security patches or bug fixes are applied automatically thus preventing potential zero day attacks 
+
+2) CKV_AWS_23 - Security Group Rule for Paylite missing descriptions 
+
+a) Status : Fixed 
+
+b) Action : Added description = "paylite app access restricted to corporate VPN and internal application subnets" 
+
+c) Rationale : Enforces more transparent network security audits and one of security group best practice 
+
+Accepted Risks & Architectural Tradeoffs 
+
+1) CKV_AWS_157 - RDS Multi AZ Deployment
+
+a) Status : Accepted Risk 
+
+b) Rationale : Setting up Multi AZ Deployments will increase the database infrastructure cost due to additional storage. Since paylite is a lightweight internal non production financial reconciliation tool used by internal staff, single AZ deployment is acceptable. This tradeoff is reassured via automated snapshots or backup vaults such as AWS Backup Vault
+
+2) CKV_AWS_161 - IAM Database Authentication 
+
+a) Status : Accepted Risk 
+
+b) Rationale : IAM database authentication requires app level support for generating short lived authentication tokens, since currently using credential based authentication which is applied using environment variables injected at runtime instead of hardcoding plaintext credentials in the code. The use of IAM DB authentication is undeniably best practice, but may become a blocker due to app compatibility issues unless app undergoes necessary changes to support this method
+
+3) CKV_AWS_118 & CKV_AWS_353 - Enhanced Monitoring & Performance Insights
+
+
+a) Status : Accepted Risk 
+
+b) Rationale : Metrics on the OS level and detailed query profiling agents would bring about additional logging overhead coupled with extra cost since paylite is a small application cloudwatch should be sufficient
+
+4) CKV_AWS_129 - RDS CloudWatch Log Exports
+
+a) Status : Accepted Risk 
+
+b) Rationale : This feature allows logs from the RDS database such as error logs or slow query logs to be exported to Cloud Watch for centralized logs. Since the app is for internal use, the database current storage should be sufficient 
+
+5) CKV_AWS_382 - Open Outbound Egress 0.0.0.0/0 on Port -1
+
+a) Status : Accepted Risk 
+
+b) Rationale : Paylite would require outbound internet connection to perform security patches downloads or communicating with external banking APIS and is acceptable since is not public facing production grade application and is within private subnets and restricted access via security groups, IAM permissions and SCPs 
+
+6) CKV_AWS_273 & CKV_AWS_40 - IAM User vs. AWS SSO & Direct Policy Attachments
+
+a) Status : Accepted risk 
+
+b) Rationale: Eventhough the app is lightweight, maintenance is still required and hence it is possible the IAM user is 
+
+
+
+

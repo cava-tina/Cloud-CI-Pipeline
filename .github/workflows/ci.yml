@@ -1,0 +1,43 @@
+name: Terraform CI Security Gates
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  terraform-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for Gitleaks to scan commit history
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Run Terraform Init & Validate
+        run: |
+          cd terraform
+          terraform init -backend=false
+          terraform fmt
+          terraform fmt -check
+          terraform validate
+
+      - name: Run Checkov Security Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
+          soft_fail: false # Strict security gate
+
+      - name: Run Gitleaks Secret Scan
+        if: always()
+        run: |
+          VERSION="8.24.3"
+          wget -q https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz
+          tar -xzf gitleaks_${VERSION}_linux_x64.tar.gz
+          ./gitleaks detect --redact -v --exit-code=2 --report-path=/tmp/gitleaks-results.sarif

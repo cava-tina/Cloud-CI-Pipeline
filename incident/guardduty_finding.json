@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "2.0",
+  "accountId": "111122223333",
+  "region": "us-east-2",
+  "id": "f2c1e9a7b8d34e5f9a0c1d2e3f4a5b6c",
+  "type": "CryptoCurrency:EC2/BitcoinTool.B!DNS",
+  "severity": 8.0,
+  "title": "EC2 instance i-0badc0ffee1234567 is querying a domain name associated with cryptocurrency mining",
+  "description": "EC2 instance i-0badc0ffee1234567 is querying the domain pool.minexmr.example.com, which is associated with cryptocurrency-related activity.",
+  "createdAt": "2026-07-26T18:47:12Z",
+  "updatedAt": "2026-07-26T19:02:44Z",
+  "resource": {
+    "resourceType": "Instance",
+    "instanceDetails": {
+      "instanceId": "i-0badc0ffee1234567",
+      "instanceType": "g4dn.xlarge",
+      "launchTime": "2026-07-26T17:58:03Z",
+      "instanceState": "running",
+      "availabilityZone": "us-east-2a",
+      "iamInstanceProfile": null,
+      "tags": []
+    }
+  },
+  "service": {
+    "action": {
+      "actionType": "DNS_REQUEST",
+      "dnsRequestAction": {
+        "domain": "pool.minexmr.example.com",
+        "protocol": "UDP",
+        "blocked": false
+      }
+    },
+    "resourceRole": "TARGET",
+    "count": 214,
+    "eventFirstSeen": "2026-07-26T18:05:19Z",
+    "eventLastSeen": "2026-07-26T19:01:57Z"
+  }
+}

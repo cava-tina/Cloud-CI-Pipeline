@@ -1,0 +1,129 @@
+{
+  "Records": [
+    {
+      "eventTime": "2026-07-26T17:41:22Z",
+      "eventSource": "sts.amazonaws.com",
+      "eventName": "GetCallerIdentity",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "185.220.101.47",
+      "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "userName": "svc-paylite-deploy",
+        "accessKeyId": "AKIA5EXAMPLE9DEPLOY1"
+      },
+      "responseElements": null
+    },
+    {
+      "eventTime": "2026-07-26T17:42:05Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "ListBuckets",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "185.220.101.47",
+      "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "userName": "svc-paylite-deploy",
+        "accessKeyId": "AKIA5EXAMPLE9DEPLOY1"
+      },
+      "responseElements": null
+    },
+    {
+      "eventTime": "2026-07-26T17:44:51Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "CreateAccessKey",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "185.220.101.47",
+      "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "userName": "svc-paylite-deploy",
+        "accessKeyId": "AKIA5EXAMPLE9DEPLOY1"
+      },
+      "requestParameters": { "userName": "svc-paylite-deploy" },
+      "responseElements": {
+        "accessKey": {
+          "accessKeyId": "AKIA5EXAMPLE2PERSIST",
+          "status": "Active",
+          "userName": "svc-paylite-deploy"
+        }
+      }
+    },
+    {
+      "eventTime": "2026-07-26T17:51:38Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "CreateSecurityGroup",
+      "awsRegion": "us-east-2",
+      "sourceIPAddress": "185.220.101.47",
+      "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "userName": "svc-paylite-deploy",
+        "accessKeyId": "AKIA5EXAMPLE2PERSIST"
+      },
+      "requestParameters": { "groupName": "default-http", "groupDescription": "http" },
+      "responseElements": { "groupId": "sg-0feedfacecafe0001" }
+    },
+    {
+      "eventTime": "2026-07-26T17:52:10Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "AuthorizeSecurityGroupIngress",
+      "awsRegion": "us-east-2",
+      "sourceIPAddress": "185.220.101.47",
+      "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "userName": "svc-paylite-deploy",
+        "accessKeyId": "AKIA5EXAMPLE2PERSIST"
+      },
+      "requestParameters": {
+        "groupId": "sg-0feedfacecafe0001",
+        "ipPermissions": [
+          { "ipProtocol": "-1", "fromPort": 0, "toPort": 65535, "ipRanges": [{ "cidrIp": "0.0.0.0/0" }] }
+        ]
+      }
+    },
+    {
+      "eventTime": "2026-07-26T17:58:03Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "RunInstances",
+      "awsRegion": "us-east-2",
+      "sourceIPAddress": "185.220.101.47",
+      "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "userName": "svc-paylite-deploy",
+        "accessKeyId": "AKIA5EXAMPLE2PERSIST"
+      },
+      "requestParameters": {
+        "instanceType": "g4dn.xlarge",
+        "maxCount": 4,
+        "minCount": 1,
+        "securityGroupIds": ["sg-0feedfacecafe0001"]
+      },
+      "responseElements": {
+        "instancesSet": {
+          "items": [
+            { "instanceId": "i-0badc0ffee1234567" }
+          ]
+        }
+      }
+    },
+    {
+      "eventTime": "2026-07-26T18:03:44Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "RunInstances",
+      "awsRegion": "ap-southeast-1",
+      "errorCode": "Client.UnauthorizedOperation",
+      "errorMessage": "You are not authorized to perform this operation (service control policy).",
+      "sourceIPAddress": "185.220.101.47",
+      "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "userName": "svc-paylite-deploy",
+        "accessKeyId": "AKIA5EXAMPLE2PERSIST"
+      },
+      "requestParameters": { "instanceType": "g4dn.12xlarge", "maxCount": 8, "minCount": 1 }
+    }
+  ]
+}

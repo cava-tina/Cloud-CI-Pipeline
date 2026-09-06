@@ -1,0 +1,5 @@
+[allowlist]
+  description = "Ignore mock incident files and exercise logs for evaluation"
+  paths = [
+    '''incident/.*''',
+  ]
