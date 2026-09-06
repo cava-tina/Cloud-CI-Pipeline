@@ -54,8 +54,8 @@ resource "aws_iam_access_key" "svc_deploy_key" {
 }
 
 resource "aws_security_group" "paylite_app" {
-  name        = "paylite-app-sg"
-  
+  name = "paylite-app-sg"
+
   # Finding #4 Remediation: Restricted SSH ingress to corporate VPN static IP
   ingress {
     description = "ssh-vpn-access"
@@ -95,5 +95,5 @@ resource "aws_db_instance" "paylite_db" {
   skip_final_snapshot       = false
   final_snapshot_identifier = "paylite-db-final-snapshot"
   vpc_security_group_ids    = [aws_security_group.paylite_app.id]
-  
+
 }
