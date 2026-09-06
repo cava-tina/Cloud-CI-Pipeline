@@ -55,6 +55,7 @@ resource "aws_iam_access_key" "svc_deploy_key" {
 
 resource "aws_security_group" "paylite_app" {
   name = "paylite-app-sg"
+  description = "paylite app access restricted to corporate VPN and internal application subnets"
 
   # Finding #4 Remediation: Restricted SSH ingress to corporate VPN static IP
   ingress {
@@ -75,6 +76,7 @@ resource "aws_security_group" "paylite_app" {
   }
 
   egress {
+    description = "Allow outbound traffic for patches and updates"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -95,5 +97,7 @@ resource "aws_db_instance" "paylite_db" {
   skip_final_snapshot       = false
   final_snapshot_identifier = "paylite-db-final-snapshot"
   vpc_security_group_ids    = [aws_security_group.paylite_app.id]
+  auto_minor_version_upgrade    = true  # Included this line to ensure minor versions are also upgraded to prevent potential zero day attacks 
+  deletion_protection           = true
 
 }
